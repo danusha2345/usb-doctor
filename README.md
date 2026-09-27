@@ -1,7 +1,7 @@
 **Поддержать автора / Support the author**
 
 - [Boosty](https://boosty.to/danusha/donate)
-- USDT (TRC20): `TKW1yLVa8F1A25vfuPaYoa891oLh1aLN7S`
+- USDT (TRC20): `THyBqiMTWQ7kUH6vVBEdboL7yGLj5mCSrX`
 - GRAM (TON): `UQDOgjGljFVJiHo_c9JLuX4hF2UQ2SXqSXhj3-1RefFMA4tB`
 
 ---
