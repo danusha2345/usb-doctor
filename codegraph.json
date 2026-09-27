@@ -1,0 +1,13 @@
+{
+  "exclude": [
+    ".jj/**",
+    ".scratch/**",
+    "extracted/**",
+    "target/**",
+    "build/**",
+    "**/build/**",
+    ".gradle/**",
+    ".kotlin/**",
+    ".idea/**"
+  ]
+}
