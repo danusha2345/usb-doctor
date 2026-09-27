@@ -1,3 +1,11 @@
+**Поддержать автора / Support the author**
+
+- [Boosty](https://boosty.to/danusha/donate)
+- USDT (TRC20): `TKW1yLVa8F1A25vfuPaYoa891oLh1aLN7S`
+- GRAM (TON): `UQDOgjGljFVJiHo_c9JLuX4hF2UQ2SXqSXhj3-1RefFMA4tB`
+
+---
+
 # USB Глаз / USB Eye
 
 [Русский](#русский) · [English](#english)
