@@ -2,6 +2,7 @@
 
 - [Boosty](https://boosty.to/danusha/donate)
 - USDT (TRC20): `THyBqiMTWQ7kUH6vVBEdboL7yGLj5mCSrX`
+- TRX (TRON): `THyBqiMTWQ7kUH6vVBEdboL7yGLj5mCSrX`
 - GRAM (TON): `UQDOgjGljFVJiHo_c9JLuX4hF2UQ2SXqSXhj3-1RefFMA4tB`
 
 ---
