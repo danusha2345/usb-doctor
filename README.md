@@ -93,31 +93,3 @@ language. Exports preserve source fields; the export format does not change with
 This is a preview release. Windows 10 has not yet had a separate runtime test.
 USB link speed is not file-copy throughput; power fields are declared values,
 not measurements. Full information is collected in the background.
-
-## Документация / Developer documentation
-
-The development documents below are maintained in Russian.
-
-- [Сборка и проверки](docs/BUILD.md).
-- [Двуязычный интерфейс 0.6.1](docs/RELEASE_061.md).
-- [Скорость, темы и совместимость 0.6.0](docs/RELEASE_06.md).
-- [Обзор подключений, колонки и подсветка](docs/INVENTORY_05.md).
-- [Покрытие декодеров и ограничения API](docs/research/DESCRIPTOR_DECODERS.md).
-- [Проверка на Windows](docs/WINDOWS_LAB.md).
-- [Что реализовано и что ещё не проверено](docs/IMPLEMENTATION.md).
-- [Матрица возможностей USBTreeView](docs/research/USBTREEVIEW_FEATURE_MATRIX.md).
-- [Windows API](docs/research/WINDOWS_API_MAP.md).
-- [План проекта](PLAN.md) · [Правила работы](AGENTS.md).
-
-Все три репозитория публичные. Основная ветка — `main`. / All three repositories are public; default branch: `main`.
-
-```sh
-jj status
-jj diff
-codegraph status . --json
-codegraph explore --path . "symbol or task"
-```
-
-Для нового checkout: `jj git init --colocate`. CodeGraph индексирует Rust; не индексировать родительские каталоги. Индекс синхронизировать только
-при pending changes. CLI остаётся внутренним инструментом диагностики и тестирования,
-в пользовательский релиз входит только GUI EXE.
