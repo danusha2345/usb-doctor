@@ -16,7 +16,7 @@ cargo build --release --target x86_64-pc-windows-gnu --bin usb-doctor --bin usb-
 Публикуемый GUI переименован в usb-glaz.exe; внутренние Cargo targets сохранены.
 Тестовый worker и диагностический CLI в релиз не входят.
 Артефакты: ~/storage/usb-doctor/artifacts/0.6.1-alpha/.
-Windows: `C:\Users\Daniil\UsbDoctorLab\usb-glaz-061.exe`.
+Для запуска в Windows скопируйте GUI EXE в выбранную папку и запустите `usb-glaz.exe`.
 [Языки и проверки](RELEASE_061.md); [измерения и ограничения](RELEASE_06.md). Публикуемый файл: `usb-glaz.exe` без упаковки,
 контрольные суммы и сведения о лицензиях. Тег: `v0.6.1-alpha`.
 

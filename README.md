@@ -109,7 +109,7 @@ The development documents below are maintained in Russian.
 - [Windows API](docs/research/WINDOWS_API_MAP.md).
 - [План проекта](PLAN.md) · [Правила работы](AGENTS.md).
 
-Все три репозитория приватные. Основная ветка — `main`. / All three repositories are private; default branch: `main`.
+Все три репозитория публичные. Основная ветка — `main`. / All three repositories are public; default branch: `main`.
 
 ```sh
 jj status
@@ -118,7 +118,6 @@ codegraph status . --json
 codegraph explore --path . "symbol or task"
 ```
 
-Для нового checkout: `jj git init --colocate`. CodeGraph индексирует Rust и
-JavaScript; не индексировать родительские каталоги. Индекс синхронизировать только
+Для нового checkout: `jj git init --colocate`. CodeGraph индексирует Rust; не индексировать родительские каталоги. Индекс синхронизировать только
 при pending changes. CLI остаётся внутренним инструментом диагностики и тестирования,
 в пользовательский релиз входит только GUI EXE.

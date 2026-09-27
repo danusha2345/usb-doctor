@@ -1,9 +1,9 @@
 # План проекта USB-доктор
 
-Статус: 0.2.0 — расширенный сбор и компактный UI с маской полей. Первый Windows-прогон выполнен на Home-PC: 14/14 устройств и режимов совпали с USBTreeView. Полнота по всем API/устройствам ещё не заявляется. См. [IMPLEMENTATION.md](docs/IMPLEMENTATION.md) и [WINDOWS_LAB.md](docs/WINDOWS_LAB.md).
+Статус: 0.6.1 alpha — компактный Windows UI, RU/EN, выбор колонок и обновление по PnP. Первый Windows-прогон: 14/14 устройств и режимов совпали с USBTreeView. Полнота по всем API/устройствам ещё не заявляется. См. [IMPLEMENTATION.md](docs/IMPLEMENTATION.md) и [WINDOWS_LAB.md](docs/WINDOWS_LAB.md).
 Дата: 2026-09-27. Первая целевая платформа: Windows 11 x64.
 
-Материалы: [полная матрица обнаруженных функций USBTreeView](docs/research/USBTREEVIEW_FEATURE_MATRIX.md), [карта Windows API и ограничений](docs/research/WINDOWS_API_MAP.md), [дизайн](docs/design/DESIGN.md), [интерактивный прототип](docs/design/prototype.html). Прототип использует только вымышленные данные. Границы корпуса: web-страницы и статические ресурсы, 59 конечных пунктов меню; встроенная F1 Help и runtime не проверены.
+Материалы: [полная матрица обнаруженных функций USBTreeView](docs/research/USBTREEVIEW_FEATURE_MATRIX.md), [карта Windows API и ограничений](docs/research/WINDOWS_API_MAP.md), [дизайн](docs/design/DESIGN.md). Первоначальный HTML-прототип убран из актуального дерева проекта. Границы корпуса: web-страницы и статические ресурсы, 59 конечных пунктов меню; встроенная F1 Help и runtime не проверены.
 
 ## 1. Задача и аудитория
 
@@ -128,7 +128,7 @@ P6–P8 сохраняют функциональную глубину: сопо
 Использовать CodeGraph как основной поиск исходников и связей после появления кода.
 `codegraph.json` хранится в репозитории; `.codegraph/` и `.jj/` локальные и игнорируются.
 CodeGraph индексирует Rust и JavaScript; это не аппаратная проверка Windows-сборщика. Markdown читать напрямую.
-VCS: Jujutsu с colocated Git, основная ветка `main`, три приватных remote.
+VCS: Jujutsu с colocated Git, основная ветка `main`, три публичных remote.
 
 ## 11. Источники и следующий шаг
 
