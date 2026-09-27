@@ -15,3 +15,5 @@ pub mod scan_job;
 pub mod single_instance;
 
 pub mod live;
+
+pub mod i18n;

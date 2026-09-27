@@ -25,12 +25,14 @@ mod platform {
             unsafe {
                 CloseHandle(handle);
             }
-            let title: Vec<u16> = "USB Глаз\0".encode_utf16().collect();
-            let hwnd = unsafe { FindWindowW(std::ptr::null(), title.as_ptr()) };
-            if !hwnd.is_null() {
-                unsafe {
-                    ShowWindowAsync(hwnd, SW_RESTORE);
-                    SetForegroundWindow(hwnd);
+            for caption in ["USB Глаз\0", "USB Eye\0"] {
+                let title: Vec<u16> = caption.encode_utf16().collect();
+                let hwnd = unsafe { FindWindowW(std::ptr::null(), title.as_ptr()) };
+                if !hwnd.is_null() {
+                    unsafe {
+                        ShowWindowAsync(hwnd, SW_RESTORE);
+                        SetForegroundWindow(hwnd);
+                    }
                 }
             }
             return Ok(None);

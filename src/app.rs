@@ -3,6 +3,7 @@ use std::{
     sync::mpsc::{self, Receiver},
     time::{Duration, Instant},
 };
+use usb_doctor::i18n::{self, Language, t};
 use usb_doctor::{
     demo,
     diagnostics::{Tone, assess, compare},
@@ -77,19 +78,22 @@ fn time(ms: u64) -> String {
     format!("{:02}:{:02}:{:02} UTC", s / 3600 % 24, s / 60 % 60, s % 60)
 }
 fn muted(ui: &mut egui::Ui, text: impl Into<String>) {
-    ui.label(RichText::new(text).color(if ui.visuals().dark_mode {
-        Color32::from_gray(175)
-    } else {
-        MUTED
-    }));
+    ui.label(
+        RichText::new(t(text.into())).color(if ui.visuals().dark_mode {
+            Color32::from_gray(175)
+        } else {
+            MUTED
+        }),
+    );
 }
-fn section(ui: &mut egui::Ui, title: &str) {
+fn section(ui: &mut egui::Ui, title: impl Into<String>) {
     ui.add_space(6.0);
-    ui.label(RichText::new(title).strong().size(14.0));
+    ui.label(RichText::new(title.into()).strong().size(14.0));
     ui.add_space(3.0);
 }
 impl Doctor {
     pub fn new(cc: &eframe::CreationContext<'_>, demo: bool) -> Self {
+        i18n::set_language(load_inventory().language);
         crate::appearance::install(&cc.egui_ctx, load_inventory().theme);
         let (monitor, monitor_status) = if demo {
             (None, "Демо".into())
@@ -147,6 +151,8 @@ impl Doctor {
             table_scroll_x: 0.0,
             export_draft: None,
         };
+        cc.egui_ctx
+            .send_viewport_cmd(egui::ViewportCommand::Title(t("USB Глаз")));
         app.refresh(&cc.egui_ctx);
         app
     }
@@ -296,22 +302,22 @@ impl Doctor {
             return;
         };
         if let Some(path) = rfd::FileDialog::new()
-            .set_title("Отчёт: выбранные поля всех USB-устройств")
-            .add_filter("HTML-отчёт", &["html"])
+            .set_title(t("Отчёт: выбранные поля всех USB-устройств"))
+            .add_filter(t("HTML-отчёт"), &["html"])
             .add_filter("JSON", &["json"])
             .set_file_name(format!("usb-doctor-{}.html", snapshot.captured_unix_ms))
             .save_file()
         {
             match report::save_selected_new(snapshot, &path, selection, *include_sensitive) {
                 Ok(()) => {
-                    self.notice = Some(
-                        "Отчёт сохранён с выбранными полями и настройкой идентификаторов.".into(),
-                    )
+                    self.notice = Some(t(
+                        "Отчёт сохранён с выбранными полями и настройкой идентификаторов.",
+                    ))
                 }
                 Err(e) => {
-                    self.notice = Some(format!(
+                    self.notice = Some(t(format!(
                         "Отчёт не сохранён: {e}. Существующие файлы не заменяются."
-                    ))
+                    )))
                 }
             }
         }
@@ -323,25 +329,25 @@ impl Doctor {
         let mut open = true;
         let mut save = false;
         let mut close = false;
-        egui::Window::new("Предпросмотр отчёта")
+        egui::Window::new(t("Предпросмотр отчёта"))
             .open(&mut open)
             .default_size([640.0, 480.0])
             .show(ctx, |ui| {
-                ui.label(format!(
+                ui.label(t(format!(
                     "Снимок {} · {} устройств · {} узлов",
                     time(snapshot.captured_unix_ms),
                     snapshot.devices.len(),
                     snapshot.topology.len()
-                ));
+                )));
                 ui.label(if snapshot.inventory_complete {
-                    "Перечисление завершено"
+                    t("Перечисление завершено")
                 } else {
-                    "Внимание: неполный снимок"
+                    t("Внимание: неполный снимок")
                 });
-                ui.checkbox(include_sensitive, "Включать идентификаторы в отчёт");
+                ui.checkbox(include_sensitive, t("Включать идентификаторы в отчёт"));
                 muted(
                     ui,
-                    "Показаны именно сохраняемые поля. Ошибки и статус полноты включаются всегда.",
+                    t("Показаны именно сохраняемые поля. Ошибки и статус полноты включаются всегда."),
                 );
                 egui::ScrollArea::vertical()
                     .max_height(330.0)
@@ -368,38 +374,38 @@ impl Doctor {
                                 })
                                 .count();
                             ui.collapsing(
-                                format!(
+                                t(format!(
                                     "Узел {} · {} полей · скрыто {} · ошибок {}",
                                     i + 1,
                                     shown.len(),
                                     hidden,
                                     d.issues.len()
-                                ),
+                                )),
                                 |ui| {
                                     for f in shown {
-                                        ui.label(format!("{}: {}", f.label, f.value));
+                                        ui.label(format!("{}: {}", t(&f.label), field_value(f)));
                                     }
                                     for e in &d.issues {
-                                        ui.label(format!(
+                                        ui.label(t(format!(
                                             "{} · код {}",
                                             e.operation,
                                             usb_doctor::fields::optional_number(e.code)
-                                        ));
+                                        )));
                                     }
                                 },
                             );
                         }
                         for e in &snapshot.issues {
-                            ui.label(format!(
+                            ui.label(t(format!(
                                 "{} · код {}",
                                 e.operation,
                                 usb_doctor::fields::optional_number(e.code)
-                            ));
+                            )));
                         }
                     });
                 ui.horizontal(|ui| {
-                    save = ui.button("Сохранить файл…").clicked();
-                    close = ui.button("Закрыть предпросмотр").clicked();
+                    save = ui.button(t("Сохранить файл…")).clicked();
+                    close = ui.button(t("Закрыть предпросмотр")).clicked();
                 });
             });
         if save {
@@ -437,9 +443,9 @@ impl Doctor {
                             }
                         }
                     },
-                    RichText::new(a.title).strong(),
+                    RichText::new(t(a.title)).strong(),
                 );
-                if ui.small_button("Сравнить").clicked() {
+                if ui.small_button(t("Сравнить")).clicked() {
                     self.baseline = Some(Baseline {
                         device: d.clone(),
                         demo: self.demo,
@@ -451,17 +457,17 @@ impl Doctor {
                 }
             });
             ui.collapsing(
-                "Основание и следующая проверка",
+                t("Основание и следующая проверка"),
                 |ui| {
-                    ui.label(a.fact);
-                    ui.label(a.interpretation);
-                    ui.label(a.next_step);
+                    ui.label(t(a.fact));
+                    ui.label(t(a.interpretation));
+                    ui.label(t(a.next_step));
                 },
             );
         }
         if !d.issues.is_empty()
             && ui
-                .small_button(format!("Доп. сведения недоступны: {}", d.issues.len()))
+                .small_button(t(format!("Доп. сведения недоступны: {}", d.issues.len())))
                 .clicked()
         {
             self.tab = Tab::Details;
@@ -472,8 +478,8 @@ impl Doctor {
             .filter(|f| self.selection.contains(&f.id))
             .count();
         ui.horizontal(|ui| {
-            muted(ui, format!("Показано {count} из {} полей", fields.len()));
-            if ui.small_button("Выбрать поля…").clicked() {
+            muted(ui, t(format!("Показано {count} из {} полей", fields.len())));
+            if ui.small_button(t("Выбрать поля…")).clicked() {
                 self.fields_open = true;
             }
         });
@@ -493,25 +499,31 @@ impl Doctor {
                 let mut previous_group = "";
                 for f in fields.iter().filter(|f| self.selection.contains(&f.id)) {
                     if show_groups && f.group != previous_group {
-                        ui.strong(&f.group);
+                        ui.strong(t(&f.group));
                         ui.label("");
                         ui.end_row();
                         previous_group = &f.group;
                     }
-                    ui.label(&f.label)
-                        .on_hover_text(format!("{}\n{}\n{}", f.group, f.id, f.source));
-                    let text = if f.display_value().chars().count() > 140 {
-                        format!(
-                            "{}…",
-                            f.display_value().chars().take(140).collect::<String>()
-                        )
+                    ui.label(t(&f.label)).on_hover_text(format!(
+                        "{}\n{}\n{}",
+                        t(&f.group),
+                        f.id,
+                        f.source
+                    ));
+                    let full_value = if f.value.is_empty() {
+                        t("Пустое значение")
                     } else {
-                        f.display_value().to_owned()
+                        field_value(f)
+                    };
+                    let text = if full_value.chars().count() > 140 {
+                        format!("{}…", full_value.chars().take(140).collect::<String>())
+                    } else {
+                        full_value.clone()
                     };
                     ui.add(egui::Label::new(text).wrap())
-                        .on_hover_text(&f.value)
+                        .on_hover_text(full_value)
                         .context_menu(|ui| {
-                            if ui.button("Копировать значение целиком").clicked()
+                            if ui.button(t("Копировать значение целиком")).clicked()
                             {
                                 ui.ctx().copy_text(f.value.clone());
                                 ui.close();
@@ -521,7 +533,9 @@ impl Doctor {
                 }
             });
         if count == 0 {
-            ui.label("Поля скрыты. Выберите нужные галочками или нажмите «Основное».");
+            ui.label(t(
+                "Поля скрыты. Выберите нужные галочками или нажмите «Основное».",
+            ));
         }
     }
     fn field_picker(&mut self, ctx: &egui::Context) {
@@ -534,25 +548,25 @@ impl Doctor {
             .map(usb_doctor::fields::for_device)
             .unwrap_or_default();
         let before = self.selection.clone();
-        egui::Window::new("Показывать поля")
+        egui::Window::new(t("Показывать поля"))
             .open(&mut open)
             .default_size([450.0, 520.0])
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    if ui.small_button("Основное").clicked() {
+                    if ui.small_button(t("Основное")).clicked() {
                         self.selection = Default::default();
                     }
-                    if ui.small_button("Все").clicked() {
+                    if ui.small_button(t("Все")).clicked() {
                         self.selection = usb_doctor::fields::FieldSelection::all();
                     }
-                    if ui.small_button("Ничего").clicked() {
+                    if ui.small_button(t("Ничего")).clicked() {
                         self.selection = usb_doctor::fields::FieldSelection::none();
                     }
                 });
                 ui.horizontal_wrapped(|ui| {
                     for preset in ["Подключение", "Питание", "Драйвер", "Дескрипторы"]
                     {
-                        if ui.small_button(preset).clicked() {
+                        if ui.small_button(t(preset)).clicked() {
                             self.selection =
                                 usb_doctor::fields::FieldSelection::preset(preset, &fields);
                         }
@@ -560,22 +574,22 @@ impl Doctor {
                 });
                 ui.add(
                     egui::TextEdit::singleline(&mut self.field_search)
-                        .hint_text("Поиск поля…")
+                        .hint_text(t("Поиск поля…"))
                         .desired_width(f32::INFINITY),
                 );
                 ui.checkbox(
                     &mut self.include_sensitive,
-                    "Включать идентификаторы в сохраняемый отчёт",
+                    t("Включать идентификаторы в сохраняемый отчёт"),
                 );
                 muted(
                     ui,
-                    "Галочки меняют только вывод. Все собранные сведения остаются в снимке.",
+                    t("Галочки меняют только вывод. Все собранные сведения остаются в снимке."),
                 );
                 ui.separator();
                 let query = self.field_search.to_lowercase();
                 let mut groups = std::collections::BTreeMap::<String, Vec<_>>::new();
                 for field in &fields {
-                    if format!("{} {}", field.label, field.id)
+                    if format!("{} {} {}", t(&field.label), field.label, field.id)
                         .to_lowercase()
                         .contains(&query)
                     {
@@ -588,12 +602,12 @@ impl Doctor {
                         let mut groups: Vec<_> = groups.into_iter().collect();
                         groups.sort_by_key(|(group, _)| (group != "Основное", group.clone()));
                         for (group, items) in groups {
-                            egui::CollapsingHeader::new(format!("{group} ({})", items.len()))
+                            egui::CollapsingHeader::new(format!("{} ({})", t(&group), items.len()))
                                 .default_open(group == "Основное" || !query.is_empty())
                                 .show(ui, |ui| {
                                     let mut all =
                                         items.iter().all(|f| self.selection.contains(&f.id));
-                                    if ui.checkbox(&mut all, "Все поля группы").changed()
+                                    if ui.checkbox(&mut all, t("Все поля группы")).changed()
                                     {
                                         for f in &items {
                                             self.selection.set(&f.id, all, &fields);
@@ -603,11 +617,11 @@ impl Doctor {
                                         ui.push_id(&f.id, |ui| {
                                             let mut on = self.selection.contains(&f.id);
                                             if ui
-                                                .checkbox(&mut on, &f.label)
-                                                .on_hover_text(format!(
+                                                .checkbox(&mut on, t(&f.label))
+                                                .on_hover_text(t(format!(
                                                     "{}\nИсточник: {}\nID: {}",
                                                     f.value, f.source, f.id
-                                                ))
+                                                )))
                                                 .changed()
                                             {
                                                 self.selection.set(&f.id, on, &fields);
@@ -622,33 +636,41 @@ impl Doctor {
         if self.selection != before
             && let Err(e) = save_selection(&self.selection)
         {
-            self.notice = Some(format!("Настройки полей не сохранены: {e}"));
+            self.notice = Some(t(format!("Настройки полей не сохранены: {e}")));
         }
     }
     fn comparison(&mut self, ui: &mut egui::Ui, d: &Device) {
-        ui.heading("Сравнение подключений");
+        ui.heading(t("Сравнение подключений"));
         if let Some(base) = &self.baseline {
             muted(
                 ui,
-                format!("Первый снимок: {} · {}", base.device.name, time(base.time)),
+                t(format!(
+                    "Первый снимок: {} · {}",
+                    base.device.name,
+                    time(base.time)
+                )),
             );
-            ui.label("Измените одно условие: подключите то же устройство к другому порту с тем же кабелем. Нажмите «Обновить» и выберите его в списке.");
+            ui.label(t("Измените одно условие: подключите то же устройство к другому порту с тем же кабелем. Нажмите «Обновить» и выберите его в списке."));
             if self.demo {
                 ui.label(
-                    RichText::new("Демо обновляет те же примеры. Реального переподключения нет.")
-                        .color(TEAL),
+                    RichText::new(t(
+                        "Демо обновляет те же примеры. Реального переподключения нет.",
+                    ))
+                    .color(TEAL),
                 );
             }
             if self.generation <= base.generation || self.error.is_some() {
                 muted(
                     ui,
-                    "Нужен новый успешный снимок: нажмите «Обновить» после изменения подключения.",
+                    t(
+                        "Нужен новый успешный снимок: нажмите «Обновить» после изменения подключения.",
+                    ),
                 );
                 return;
             }
             ui.checkbox(
                 &mut self.identity_confirmed,
-                "Подтверждаю: выбрано то же физическое устройство",
+                t("Подтверждаю: выбрано то же физическое устройство"),
             );
             let source = self.snapshot.as_ref().is_some_and(|s| s.demo == base.demo);
             if let Ok(c) = compare(&base.device, d, self.identity_confirmed, source) {
@@ -657,23 +679,23 @@ impl Doctor {
                     .spacing([12.0, 4.0])
                     .striped(true)
                     .show(ui, |ui| {
-                        ui.strong("Параметр");
-                        ui.strong("Сохранённый снимок");
-                        ui.strong("Текущий снимок");
+                        ui.strong(t("Параметр"));
+                        ui.strong(t("Сохранённый снимок"));
+                        ui.strong(t("Текущий снимок"));
                         ui.end_row();
-                        ui.label("Режим USB");
-                        ui.label(base.device.speed_label());
-                        ui.label(d.speed_label());
+                        ui.label(t("Режим USB"));
+                        ui.label(t(base.device.speed_label()));
+                        ui.label(t(d.speed_label()));
                         ui.end_row();
-                        ui.label("Путь");
+                        ui.label(t("Путь"));
                         ui.label(base.device.path.join(" / "));
                         ui.label(d.path.join(" / "));
                         ui.end_row();
-                        ui.label("Порт");
-                        ui.label(usb_doctor::fields::optional_number(base.device.port));
-                        ui.label(usb_doctor::fields::optional_number(d.port));
+                        ui.label(t("Порт"));
+                        ui.label(t(usb_doctor::fields::optional_number(base.device.port)));
+                        ui.label(t(usb_doctor::fields::optional_number(d.port)));
                         ui.end_row();
-                        ui.label("Код Windows");
+                        ui.label(t("Код Windows"));
                         ui.label(usb_doctor::fields::optional_number(
                             base.device.windows_problem,
                         ));
@@ -681,19 +703,23 @@ impl Doctor {
                         ui.end_row();
                     });
                 ui.add_space(6.0);
-                ui.label(if c.changed{"Режимы в снимках различаются. Это не доказывает неисправность порта или кабеля."}else{"Различий режима не обнаружено. Это не доказывает стабильность или исправность."});
+                ui.label(if c.changed{t("Режимы в снимках различаются. Это не доказывает неисправность порта или кабеля.")}else{t("Различий режима не обнаружено. Это не доказывает стабильность или исправность.")});
             } else {
                 muted(
                     ui,
-                    "Сравнение доступно после подтверждения того же устройства. VID/PID и название не гарантируют идентичность.",
+                    t(
+                        "Сравнение доступно после подтверждения того же устройства. VID/PID и название не гарантируют идентичность.",
+                    ),
                 );
             }
-            if ui.button("Убрать сохранённый снимок").clicked() {
+            if ui.button(t("Убрать сохранённый снимок")).clicked() {
                 self.baseline = None;
                 self.identity_confirmed = false;
             }
         } else {
-            ui.label("Сначала выберите устройство и сохраните его снимок в разделе «Обзор».");
+            ui.label(t(
+                "Сначала выберите устройство и сохраните его снимок в разделе «Обзор».",
+            ));
         }
     }
     fn column_picker(&mut self, ctx: &egui::Context) {
@@ -708,20 +734,20 @@ impl Doctor {
         }
         let mut open = true;
         let mut done = false;
-        egui::Window::new("Поля таблицы").open(&mut open).default_size([620.0,520.0]).show(ctx,|ui|{
-            ui.label("Любое собранное поле можно вывести отдельной колонкой. — означает, что у этого узла поле не получено.");
-            ui.horizontal(|ui|{ui.add(egui::TextEdit::singleline(&mut self.column_search).hint_text("Название, группа или ID поля…").desired_width(380.0));if ui.small_button("Основные").clicked(){self.inventory.columns=usb_doctor::inventory::Column::ALL.into_iter().collect();self.inventory.extra_columns.clear();self.inventory_dirty=true;}});
-            ui.label(format!("Дополнительных колонок: {} · доступных полей: {}",self.inventory.extra_columns.len(),self.field_catalog.len()));
+        egui::Window::new(t("Поля таблицы")).open(&mut open).default_size([620.0,520.0]).show(ctx,|ui|{
+            ui.label(t("Любое собранное поле можно вывести отдельной колонкой. — означает, что у этого узла поле не получено."));
+            ui.horizontal(|ui|{ui.add(egui::TextEdit::singleline(&mut self.column_search).hint_text(t("Название, группа или ID поля…")).desired_width(380.0));if ui.small_button(t("Основные")).clicked(){self.inventory.columns=usb_doctor::inventory::Column::ALL.into_iter().collect();self.inventory.extra_columns.clear();self.inventory_dirty=true;}});
+            ui.label(t(format!("Дополнительных колонок: {} · доступных полей: {}",self.inventory.extra_columns.len(),self.field_catalog.len())));
             let query=self.column_search.to_lowercase();
             egui::ScrollArea::vertical().max_height(380.0).show(ui,|ui|{
                 let mut groups=std::collections::BTreeMap::<String,Vec<_>>::new();
-                for f in &self.field_catalog {if format!("{} {} {}",f.label,f.group,f.id).to_lowercase().contains(&query){groups.entry(f.group.clone()).or_default().push(f);}}
-                for (group,fields) in groups {egui::CollapsingHeader::new(format!("{group} ({})",fields.len())).id_salt(("column-group",&group,query.is_empty())).default_open(!query.is_empty()||group=="Основное").show(ui,|ui|{
+                for f in &self.field_catalog {if format!("{} {} {} {} {}",t(&f.label),t(&f.group),f.label,f.group,f.id).to_lowercase().contains(&query){groups.entry(f.group.clone()).or_default().push(f);}}
+                for (group,fields) in groups {egui::CollapsingHeader::new(format!("{} ({})",t(&group),fields.len())).id_salt(("column-group",&group,query.is_empty())).default_open(!query.is_empty()||group=="Основное").show(ui,|ui|{
                     let mut all=fields.iter().all(|f|self.inventory.field_selected(&f.id));
-                    if ui.checkbox(&mut all,"Все поля группы").changed(){for f in &fields {self.inventory.set_field(&f.id,&format!("{} · {}",f.label,f.group),all);}self.inventory_dirty=true;}
-                    for f in fields {ui.push_id(&f.id,|ui|{let mut on=self.inventory.field_selected(&f.id);if ui.checkbox(&mut on,&f.label).on_hover_text(format!("{}\n{}",f.id,f.source)).changed(){self.inventory.set_field(&f.id,&format!("{} · {}",f.label,f.group),on);self.inventory_dirty=true;}});}
+                    if ui.checkbox(&mut all,t("Все поля группы")).changed(){for f in &fields {self.inventory.set_field(&f.id,&format!("{} · {}",f.label,f.group),all);}self.inventory_dirty=true;}
+                    for f in fields {ui.push_id(&f.id,|ui|{let mut on=self.inventory.field_selected(&f.id);if ui.checkbox(&mut on,t(&f.label)).on_hover_text(format!("{}\n{}",f.id,f.source)).changed(){self.inventory.set_field(&f.id,&format!("{} · {}",f.label,f.group),on);self.inventory_dirty=true;}});}
                 });}
-            });done=ui.button("Готово").clicked();
+            });done=ui.button(t("Готово")).clicked();
         });
         self.inventory.normalize();
         self.column_picker_open = open && !done;
@@ -733,14 +759,15 @@ impl Doctor {
         ui.horizontal_wrapped(|ui| {
             ui.add(
                 egui::TextEdit::singleline(&mut self.search)
-                    .hint_text("Имя, VID/PID, серийный номер, порт…")
+                    .hint_text(t("Имя, VID/PID, серийный номер, порт…"))
                     .desired_width(290.0),
             );
-            if !self.search.is_empty() && ui.small_button("Очистить поиск").clicked() {
+            if !self.search.is_empty() && ui.small_button(t("Очистить поиск")).clicked()
+            {
                 self.search.clear();
             }
             if ui
-                .checkbox(&mut self.inventory.grouped, "По хабам")
+                .checkbox(&mut self.inventory.grouped, t("По хабам"))
                 .changed()
             {
                 self.show_topology = self.inventory.grouped;
@@ -750,31 +777,31 @@ impl Doctor {
             ui.checkbox(
                 &mut self.inventory.show_hubs,
                 if self.inventory.grouped {
-                    "Пустые ветки"
+                    t("Пустые ветки")
                 } else {
-                    "Показывать хабы"
+                    t("Показывать хабы")
                 },
             );
-            if ui.button("Поля / колонки…").clicked() {
+            if ui.button(t("Поля / колонки…")).clicked() {
                 self.column_picker_open = true;
             }
-            ui.menu_button("Вид / колонки", |ui| {
-                if ui.button("Сбросить порядок").clicked() {
+            ui.menu_button(t("Вид / колонки"), |ui| {
+                if ui.button(t("Сбросить порядок")).clicked() {
                     self.inventory.column_order.clear();
                     self.inventory_dirty = true;
                 }
-                if ui.button("Сбросить ширины").clicked() {
+                if ui.button(t("Сбросить ширины")).clicked() {
                     self.inventory.widths.clear();
                     reset_widths = true;
                 }
                 ui.checkbox(
                     &mut self.inventory.follow_changes,
-                    "Прокручивать к изменениям",
+                    t("Прокручивать к изменениям"),
                 );
                 ui.separator();
                 for col in Column::ALL {
                     let mut on = self.inventory.columns.contains(&col);
-                    if ui.checkbox(&mut on, col.label()).changed() {
+                    if ui.checkbox(&mut on, t(col.label())).changed() {
                         if on {
                             self.inventory.columns.insert(col);
                         } else {
@@ -784,10 +811,10 @@ impl Doctor {
                 }
             });
             if self.inventory.grouped {
-                if ui.small_button("Развернуть всё").clicked() {
+                if ui.small_button(t("Развернуть всё")).clicked() {
                     self.inventory.collapsed.clear();
                 }
-                if ui.small_button("Свернуть всё").clicked()
+                if ui.small_button(t("Свернуть всё")).clicked()
                     && let Some(s) = &self.snapshot
                 {
                     for (d, _) in s.navigation_rows(true) {
@@ -799,20 +826,22 @@ impl Doctor {
             }
         });
         let Some(snapshot) = &self.snapshot else {
-            muted(ui, "Получаем список подключённых USB-устройств…");
+            muted(ui, t("Получаем список подключённых USB-устройств…"));
             return;
         };
         let rows = inventory::rows(snapshot, &self.inventory, &self.search, &self.changes);
         let devices = snapshot.devices.iter().filter(|d| !d.is_hub).count();
         muted(
             ui,
-            format!(
+            t(format!(
                 "Подключено устройств: {devices} · USB-хабов: {} · нажмите строку для подробностей",
                 snapshot.devices.iter().filter(|d| d.is_hub).count()
-            ),
+            )),
         );
         if rows.is_empty() {
-            ui.label("Нет совпадений. Очистите поиск; история доступна сверху.");
+            ui.label(t(
+                "Нет совпадений. Очистите поиск; история доступна сверху.",
+            ));
         }
         let mut clicked: Option<(Device, bool)> = None;
         let columns = inventory::display_columns(&self.inventory);
@@ -848,7 +877,7 @@ impl Doctor {
                 for col in &columns {let fallback=if col.id=="name"{(header_width-columns.iter().filter(|c|c.id!="name").map(|c|c.width()).sum::<f32>()-7.0*columns.len() as f32).max(320.0)}else{col.width()};let width=self.inventory.widths.get(col.key()).copied().unwrap_or(fallback).clamp(col.minimum(),1600.0);table=table.column(egui_extras::Column::initial(width).at_least(col.minimum()).clip(true));}
                 table=table.column(egui_extras::Column::remainder().at_least(0.0).resizable(false));if reset_widths{table.reset();}
                 table.header(26.0,|mut header|{for col in &columns{header.col(|ui|{
-                    let r=ui.add(egui::Label::new(RichText::new(col.label()).strong()).truncate().show_tooltip_when_elided(false).sense(egui::Sense::drag())).on_hover_text(format!("{}\nПеретащите заголовок для перестановки; границу — для изменения ширины",col.label()));
+                    let r=ui.add(egui::Label::new(RichText::new(t(col.label())).strong()).truncate().show_tooltip_when_elided(false).sense(egui::Sense::drag())).on_hover_text(t(format!("{}\nПеретащите заголовок для перестановки; границу — для изменения ширины",col.label())));
                     r.dnd_set_drag_payload(ColumnDrag(col.id.clone()));if r.dnd_hover_payload::<ColumnDrag>().is_some(){ui.painter().vline(r.rect.left(),r.rect.y_range(),egui::Stroke::new(2.0,TEAL));}
                     if let Some(payload)=r.dnd_release_payload::<ColumnDrag>(){reorder=Some((payload.0.clone(),col.id.clone()));}
                 });}header.col(|_|{});}).body(|body|{for (col,width)in columns.iter().zip(body.widths()){self.inventory.widths.insert(col.id.clone(),*width);}});
@@ -924,9 +953,9 @@ impl Doctor {
                                     if ui
                                         .small_button(if closed { "+" } else { "-" })
                                         .on_hover_text(if closed {
-                                            "Развернуть хаб"
+                                            t("Развернуть хаб")
                                         } else {
-                                            "Свернуть хаб"
+                                            t("Свернуть хаб")
                                         })
                                         .clicked()
                                     {
@@ -943,11 +972,8 @@ impl Doctor {
                                     None => "",
                                 };
                                 let label = if item.group {
-                                    format!(
-                                        "{marker}{} · {} устр.",
-                                        inventory::display_name(d),
-                                        item.children
-                                    )
+                                    format!("{marker}{} · {} {}", inventory::display_name(d), item.children,
+                                        if self.inventory.language == Language::English { if item.children == 1 { "device" } else { "devices" } } else { "устр." })
                                 } else {
                                     format!("{marker}{}", inventory::display_name(d))
                                 };
@@ -965,25 +991,25 @@ impl Doctor {
                                 let value = if col.standard == Some(Column::Status) {
                                     match kind {
                                         Some(ChangeKind::Removed) => {
-                                            "Отключено · последние сведения".into()
+                                            t("Отключено · последние сведения")
                                         }
-                                        Some(ChangeKind::Added) => "Подключено сейчас".into(),
+                                        Some(ChangeKind::Added) => t("Подключено сейчас"),
                                         None if item.added + item.removed > 0 => {
-                                            format!("Внутри: +{} −{}", item.added, item.removed)
+                                            t(format!("Внутри: +{} −{}", item.added, item.removed))
                                         }
-                                        None => col.value(d),
+                                        None => column_value(col, d),
                                     }
                                 } else {
-                                    col.value(d)
+                                    column_value(col, d)
                                 };
                                 ui.add(
                                     egui::Label::new(&value)
                                         .truncate()
                                         .show_tooltip_when_elided(false),
                                 )
-                                .on_hover_text(&value)
+                                .on_hover_text(if col.standard == Some(Column::Status) && !d.issues.is_empty() { t(format!("Не удалось выполнить запросов: {}. Это не означает неисправность устройства. Подробности: Дескрипторы → Не получено / ошибки запросов.", d.issues.len())) } else { value.clone() })
                                 .context_menu(|ui| {
-                                    if ui.button("Копировать значение").clicked()
+                                    if ui.button(t("Копировать значение")).clicked()
                                     {
                                         ui.ctx().copy_text(value);
                                         ui.close();
@@ -1018,8 +1044,8 @@ impl Doctor {
                     }
                     response.context_menu(|ui| {
                         for (label, value) in [
-                            ("Копировать VID:PID", inventory::vid_pid(d)),
-                            ("Копировать Instance ID", d.key.clone()),
+                            (t("Копировать VID:PID"), inventory::vid_pid(d)),
+                            (t("Копировать Instance ID"), d.key.clone()),
                         ] {
                             if ui.button(label).clicked() {
                                 ui.ctx().copy_text(value);
@@ -1059,17 +1085,17 @@ impl Doctor {
         if self.inventory_dirty && !ui.input(|i| i.pointer.any_down()) {
             match save_inventory(&self.inventory) {
                 Ok(()) => self.inventory_dirty = false,
-                Err(e) => self.notice = Some(format!("Настройки списка не сохранены: {e}")),
+                Err(e) => self.notice = Some(t(format!("Настройки списка не сохранены: {e}"))),
             }
         }
     }
     fn details(&self, ui: &mut egui::Ui, d: &Device) {
-        ui.label(format!(
+        ui.label(t(format!(
             "{} блоков дескрипторов · исходные байты сохранены",
             d.descriptors.len()
-        ));
+        )));
         for (index, desc) in d.descriptors.iter().enumerate() {
-            egui::CollapsingHeader::new(format!(
+            egui::CollapsingHeader::new(t(format!(
                 "{} #{} · lang {:04X} · {} байт{}",
                 desc.kind,
                 desc.index,
@@ -1080,14 +1106,14 @@ impl Doctor {
                 } else {
                     " · неполный"
                 }
-            ))
+            )))
             .id_salt(index)
             .show(ui, |ui| {
                 for note in &desc.notes {
-                    ui.label(note);
+                    ui.label(t(note));
                 }
                 let raw = usb_doctor::fields::hex(&desc.raw);
-                if ui.small_button("Копировать HEX").clicked() {
+                if ui.small_button(t("Копировать HEX")).clicked() {
                     ui.ctx().copy_text(raw.clone());
                 }
                 egui::ScrollArea::vertical()
@@ -1098,15 +1124,17 @@ impl Doctor {
             });
         }
         if !d.issues.is_empty() {
-            section(ui, "Не получено / ошибки запросов");
+            section(ui, t("Не получено / ошибки запросов"));
             for issue in &d.issues {
                 ui.label(format!(
                     "{} · {:?}: {}",
-                    issue.operation, issue.code, issue.reason
+                    issue.operation,
+                    issue.code,
+                    t(&issue.reason)
                 ));
             }
         }
-        ui.collapsing("Ограничения интерпретации",|ui|{ui.label("Режим USB не равен скорости копирования. MaxPower — заявленное потребление. Ошибка запроса не доказывает неисправность. Неразобранные class-specific поля сохранены исходными байтами.");});
+        ui.collapsing(t("Ограничения интерпретации"),|ui|{ui.label(t("Режим USB не равен скорости копирования. MaxPower — заявленное потребление. Ошибка запроса не доказывает неисправность. Неразобранные class-specific поля сохранены исходными байтами."));});
     }
 }
 impl eframe::App for Doctor {
@@ -1160,7 +1188,7 @@ impl eframe::App for Doctor {
             }
             Some(Err(mpsc::TryRecvError::Disconnected)) => {
                 self.presence_rx = None;
-                self.error = Some("Быстрый опрос завершился без результата".into());
+                self.error = Some(t("Быстрый опрос завершился без результата"));
             }
             _ => {}
         }
@@ -1222,6 +1250,7 @@ impl eframe::App for Doctor {
         ));
     }
     fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
+        i18n::set_language(self.inventory.language);
         egui::Panel::top("header")
             .frame(
                 egui::Frame::new()
@@ -1230,16 +1259,17 @@ impl eframe::App for Doctor {
             )
             .show(ui, |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    ui.label(RichText::new("USB Глаз").strong().size(18.0));
-                    ui.selectable_value(&mut self.tab, Tab::Inventory, "Подключения");
-                    ui.selectable_value(&mut self.tab, Tab::History, "История");
+                    ui.label(RichText::new(t("USB Глаз")).strong().size(18.0));
+                    ui.selectable_value(&mut self.tab, Tab::Inventory, t("Подключения"));
+                    ui.selectable_value(&mut self.tab, Tab::History, t("История"));
                     if ui
-                        .add_enabled(self.job.is_none(), egui::Button::new("Обновить"))
+                        .add_enabled(self.job.is_none(), egui::Button::new(t("Обновить")))
                         .clicked()
                     {
                         self.refresh(ui.ctx());
                     }
-                    if self.job.is_some() && ui.button("Остановить сбор").clicked() {
+                    if self.job.is_some() && ui.button(t("Остановить сбор")).clicked()
+                    {
                         self.auto_refresh = false;
                         self.detailed_dirty = false;
                         self.manual_refresh = false;
@@ -1253,7 +1283,7 @@ impl eframe::App for Doctor {
                     if ui
                         .add_enabled(
                             self.snapshot.is_some(),
-                            egui::Button::new("Сохранить отчёт"),
+                            egui::Button::new(t("Сохранить отчёт")),
                         )
                         .clicked()
                     {
@@ -1271,51 +1301,70 @@ impl eframe::App for Doctor {
                     }
                     ui.add_enabled(
                         !self.demo,
-                        egui::Checkbox::new(&mut self.auto_refresh, "Автообновление"),
+                        egui::Checkbox::new(&mut self.auto_refresh, t("Автообновление")),
                     )
-                    .on_hover_text(&self.monitor_status);
-                    ui.menu_button("Тема", |ui| {
+                    .on_hover_text(t(&self.monitor_status));
+                    ui.menu_button(t("Тема"), |ui| {
                         let before = self.inventory.theme;
                         for (choice, label) in [
-                            (usb_doctor::inventory::ThemeChoice::System, "Как в Windows"),
-                            (usb_doctor::inventory::ThemeChoice::Light, "Светлая"),
-                            (usb_doctor::inventory::ThemeChoice::Dark, "Тёмная"),
+                            (
+                                usb_doctor::inventory::ThemeChoice::System,
+                                t("Как в Windows"),
+                            ),
+                            (usb_doctor::inventory::ThemeChoice::Light, t("Светлая")),
+                            (usb_doctor::inventory::ThemeChoice::Dark, t("Тёмная")),
                         ] {
                             ui.radio_value(&mut self.inventory.theme, choice, label);
                         }
                         if before != self.inventory.theme {
                             crate::appearance::apply(ui.ctx(), self.inventory.theme);
                             if let Err(e) = save_inventory(&self.inventory) {
-                                self.notice = Some(format!("Тема не сохранена: {e}"));
+                                self.notice = Some(t(format!("Тема не сохранена: {e}")));
                             }
                             self.inventory_dirty = true;
+                        }
+                    });
+                    ui.menu_button("Язык / Language", |ui| {
+                        let before = self.inventory.language;
+                        ui.radio_value(&mut self.inventory.language, Language::Russian, "Русский");
+                        ui.radio_value(&mut self.inventory.language, Language::English, "English");
+                        if before != self.inventory.language {
+                            i18n::set_language(self.inventory.language);
+                            ui.ctx()
+                                .send_viewport_cmd(egui::ViewportCommand::Title(t("USB Глаз")));
+                            if let Err(e) = save_inventory(&self.inventory) {
+                                self.notice = Some(format!("Язык не сохранён: {e}"));
+                            }
+                            self.inventory_dirty = true;
+                            ui.ctx().request_repaint();
+                            ui.close();
                         }
                     });
                 });
             });
         egui::CentralPanel::default().frame(egui::Frame::new().fill(ui.visuals().panel_fill).inner_margin(8)).show(ui,|ui|{
-            if !self.auto_refresh&&!self.demo{ui.colored_label(Color32::from_rgb(150,94,20),"Автообновление приостановлено. Показаны последние полученные сведения.");}
-            if let Some(e)=&self.error{ui.colored_label(Color32::from_rgb(160,55,40),format!("{e} Данные могут быть устаревшими."));}
-            if self.snapshot.as_ref().is_some_and(|s|!s.inventory_complete||!s.issues.is_empty()){ui.colored_label(Color32::from_rgb(150,94,20),"Часть USB-сведений недоступна; отсутствие устройства не подтверждает отключение.");}
-            if let Some(notice)=&self.notice{ui.label(notice);}
-            if self.tab!=Tab::Inventory&&self.pending_reveal.is_some()&&ui.button("Изменилось подключение USB — показать").clicked(){self.tab=Tab::Inventory;}
+            if !self.auto_refresh&&!self.demo{ui.colored_label(Color32::from_rgb(150,94,20),t("Автообновление приостановлено. Показаны последние полученные сведения."));}
+            if let Some(e)=&self.error{ui.colored_label(Color32::from_rgb(160,55,40),t(format!("{e} Данные могут быть устаревшими.")));}
+            if self.snapshot.as_ref().is_some_and(|s|!s.inventory_complete||!s.issues.is_empty()){ui.colored_label(Color32::from_rgb(150,94,20),t("Часть USB-сведений недоступна; отсутствие устройства не подтверждает отключение."));}
+            if let Some(notice)=&self.notice{ui.label(t(notice));}
+            if self.tab!=Tab::Inventory&&self.pending_reveal.is_some()&&ui.button(t("Изменилось подключение USB — показать")).clicked(){self.tab=Tab::Inventory;}
             match self.tab {
                 Tab::Inventory=>self.inventory_ui(ui),
-                Tab::History=>{ui.heading("История сеанса");if self.history.is_empty(){muted(ui,"Событий пока нет.");}egui::ScrollArea::vertical().show(ui,|ui|{for e in self.history.iter().rev(){ui.label(e);}});},
+                Tab::History=>{ui.heading(t("История сеанса"));if self.history.is_empty(){muted(ui,t("Событий пока нет."));}egui::ScrollArea::vertical().show(ui,|ui|{for e in self.history.iter().rev(){ui.label(t(e));}});},
                 _=>{
-                    if ui.small_button("← К подключениям").clicked(){self.tab=Tab::Inventory;}
+                    if ui.small_button(t("← К подключениям")).clicked(){self.tab=Tab::Inventory;}
                     if let Some(d)=self.selected_device().cloned(){
                         ui.horizontal_wrapped(|ui|{ui.label(RichText::new(usb_doctor::inventory::display_name(&d)).strong().size(17.0));muted(ui,usb_doctor::inventory::functions(&d).join(" + "));});
-                        if self.removed_selection.is_some(){ui.colored_label(Color32::from_rgb(166,54,54),"Отключено · последние известные сведения");}
+                        if self.removed_selection.is_some(){ui.colored_label(Color32::from_rgb(166,54,54),t("Отключено · последние известные сведения"));}
                         ui.horizontal_wrapped(|ui|{
-                            if ui.small_button("Копировать VID:PID").clicked(){ui.ctx().copy_text(usb_doctor::inventory::vid_pid(&d));}
-                            if ui.small_button("Копировать Instance ID").clicked(){ui.ctx().copy_text(d.key.clone());}
-                            if let Some(serial)=d.fields.iter().find(|f|f.id=="usb.serial")&&ui.small_button("Копировать серийный номер").clicked(){ui.ctx().copy_text(serial.value.clone());}
-                            if let Some(address)=d.fields.iter().find(|f|f.id=="usb.address"){ui.label(format!("Адрес USB: {}",address.value)).on_hover_text("Адрес на шине USB; может измениться после переподключения. Это не VID/PID и не Instance ID.");}
+                            if ui.small_button(t("Копировать VID:PID")).clicked(){ui.ctx().copy_text(usb_doctor::inventory::vid_pid(&d));}
+                            if ui.small_button(t("Копировать Instance ID")).clicked(){ui.ctx().copy_text(d.key.clone());}
+                            if let Some(serial)=d.fields.iter().find(|f|f.id=="usb.serial")&&ui.small_button(t("Копировать серийный номер")).clicked(){ui.ctx().copy_text(serial.value.clone());}
+                            if let Some(address)=d.fields.iter().find(|f|f.id=="usb.address"){ui.label(t(format!("Адрес USB: {}",address.value))).on_hover_text(t("Адрес на шине USB; может измениться после переподключения. Это не VID/PID и не Instance ID."));}
                         });
-                        ui.horizontal(|ui|{for (tab,label) in [(Tab::Overview,"Поля"),(Tab::Compare,"Сравнение"),(Tab::Details,"Дескрипторы")]{ui.selectable_value(&mut self.tab,tab,label);}});ui.separator();
+                        ui.horizontal(|ui|{for (tab,label) in [(Tab::Overview,t("Поля")),(Tab::Compare,t("Сравнение")),(Tab::Details,t("Дескрипторы"))]{ui.selectable_value(&mut self.tab,tab,label);}});ui.separator();
                         egui::ScrollArea::vertical().show(ui,|ui|{match self.tab {Tab::Overview=>self.overview(ui,&d),Tab::Compare=>self.comparison(ui,&d),Tab::Details=>self.details(ui,&d),_=>{}}});
-                    }else{muted(ui,"Выберите устройство в списке подключений.");}
+                    }else{muted(ui,t("Выберите устройство в списке подключений."));}
                 }
             }
         });
@@ -1365,7 +1414,7 @@ fn save_selection(s: &usb_doctor::fields::FieldSelection) -> std::io::Result<()>
 fn inventory_path() -> Option<std::path::PathBuf> {
     settings_path().map(|p| p.with_file_name("inventory.json"))
 }
-fn load_inventory() -> usb_doctor::inventory::Options {
+pub(crate) fn load_inventory() -> usb_doctor::inventory::Options {
     let mut o: usb_doctor::inventory::Options = inventory_path()
         .and_then(|p| std::fs::read(p).ok())
         .and_then(|b| serde_json::from_slice(&b).ok())
@@ -1387,4 +1436,35 @@ impl Drop for Doctor {
     fn drop(&mut self) {
         let _ = save_inventory(&self.inventory);
     }
+}
+
+// Windows/device-provided values remain verbatim; local labels and missing-value messages translate.
+fn field_value(field: &usb_doctor::fields::Field) -> String {
+    if field.sensitive
+        || field.id == "name"
+        || field.id.starts_with("windows.")
+        || matches!(
+            field.id.as_str(),
+            "usb.product" | "usb.manufacturer" | "usb.serial"
+        )
+    {
+        field.value.clone()
+    } else {
+        t(&field.value)
+    }
+}
+
+fn column_value(col: &usb_doctor::inventory::DisplayColumn, d: &Device) -> String {
+    if col.standard.is_some() {
+        return t(col.value(d));
+    }
+    let id = col.id.strip_prefix("field:").unwrap_or(&col.id);
+    if let Some(field) = d.fields.iter().find(|f| f.id == id) {
+        return field_value(field);
+    }
+    usb_doctor::fields::base_fields(d)
+        .iter()
+        .find(|f| f.id == id)
+        .map(field_value)
+        .unwrap_or_else(|| "—".into())
 }

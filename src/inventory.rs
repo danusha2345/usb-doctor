@@ -64,7 +64,7 @@ impl Column {
                 } else if d.connection_status.is_some_and(|s| s != 1) {
                     crate::fields::connection_status(d.connection_status.unwrap())
                 } else if !d.issues.is_empty() {
-                    format!("Недоступно запросов: {}", d.issues.len())
+                    "Подключено · часть данных недоступна".into()
                 } else {
                     "Подключено".into()
                 }
@@ -90,6 +90,7 @@ pub struct Options {
     pub widths: std::collections::BTreeMap<String, f32>,
     pub extra_columns: std::collections::BTreeMap<String, String>,
     pub theme: ThemeChoice,
+    pub language: crate::i18n::Language,
     pub column_order: Vec<String>,
 }
 impl Default for Options {
@@ -104,6 +105,7 @@ impl Default for Options {
             widths: Default::default(),
             extra_columns: Default::default(),
             theme: ThemeChoice::System,
+            language: Default::default(),
             column_order: Vec::new(),
         }
     }

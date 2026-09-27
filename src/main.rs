@@ -1,4 +1,5 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+use usb_doctor::i18n::{self, t};
 mod app;
 mod appearance;
 fn main() -> eframe::Result {
@@ -9,11 +10,12 @@ fn main() -> eframe::Result {
         }
         return Ok(());
     }
+    i18n::set_language(app::load_inventory().language);
     let _guard = match usb_doctor::single_instance::acquire() {
         Ok(Some(g)) => g,
         Ok(None) => return Ok(()),
         Err(e) => {
-            rfd::MessageDialog::new().set_description(e).show();
+            rfd::MessageDialog::new().set_description(t(e)).show();
             return Ok(());
         }
     };
@@ -21,8 +23,8 @@ fn main() -> eframe::Result {
     let demo = cfg!(feature = "test-worker") && args.as_slice() == ["--demo"];
     if !args.is_empty() && !demo {
         rfd::MessageDialog::new()
-            .set_title("USB Глаз")
-            .set_description("Для отчётов используйте usb-glaz-cli --help.")
+            .set_title(t("USB Глаз"))
+            .set_description(t("Запустите приложение без аргументов."))
             .show();
         return Ok(());
     }
@@ -47,7 +49,7 @@ fn main() -> eframe::Result {
         Box::new(move |cc| Ok(Box::new(app::Doctor::new(cc, demo)))),
     );
     if let Err(error) = &result {
-        rfd::MessageDialog::new().set_title("USB Глаз").set_description(format!("Не удалось открыть интерфейс: {error}\nНужны Windows 10/11 x64. Проверьте видеодрайвер и поддержку OpenGL. CLI работает без графического интерфейса.")).show();
+        rfd::MessageDialog::new().set_title(t("USB Глаз")).set_description(t(format!("Не удалось открыть интерфейс: {error}\nНужны Windows 10/11 x64. Проверьте видеодрайвер и поддержку OpenGL."))).show();
     }
     result
 }
