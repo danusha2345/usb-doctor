@@ -1,0 +1,47 @@
+[package]
+name = "usb-doctor"
+version = "0.6.0"
+edition = "2024"
+rust-version = "1.95"
+publish = false
+description = "USB Глаз — устройства, порты и подключения"
+
+[features]
+default = ["gui"]
+test-worker = []
+gui = ["dep:eframe", "dep:rfd", "dep:egui_extras"]
+
+[dependencies]
+egui_extras = { version = "=0.36.2", optional = true, default-features = false }
+tempfile = "3.27.0"
+sha2 = "0.10.8"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+time = "0.3.47"
+eframe = { version = "=0.36.2", optional = true, default-features = false, features = ["glow", "default_fonts", "accesskit", "wayland", "x11"] }
+rfd = { version = "=0.17.2", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Devices_DeviceAndDriverInstallation", "Win32_Devices_Usb", "Win32_Devices_Properties", "Win32_Devices_HumanInterfaceDevice", "Win32_System_Ioctl", "Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_Security", "Win32_System_Registry", "Win32_System_Threading", "Win32_System_JobObjects", "Win32_UI_WindowsAndMessaging"] }
+
+[[bin]]
+name = "usb-doctor"
+path = "src/main.rs"
+required-features = ["gui"]
+
+[[bin]]
+name = "usb-doctor-cli"
+path = "src/bin/cli.rs"
+
+[profile.release]
+lto = "thin"
+strip = true
+codegen-units = 1
+
+[profile.dev]
+debug = 1
+
+[[bin]]
+name = "usb-doctor-test-worker"
+path = "tests/fixtures/worker.rs"
+required-features = ["test-worker"]

@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>USB-доктор · прототип</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%2318675c%27/%3E%3Cpath d=%27M10 7v12h13m-5-5 5 5-5 5%27 fill=%27none%27 stroke=%27white%27 stroke-width=%272%27/%3E%3C/svg%3E"><link rel="stylesheet" href="prototype.css"></head>
+<body>
+<header class="app-header"><a class="brand" href="prototype.html"><span class="brand-icon" aria-hidden="true">↳</span> USB-доктор</a><span class="demo">Демо · пример данных</span><span class="header-note">Разобраться в подключении</span></header>
+<div class="workspace">
+<aside class="sidebar" aria-label="Выбор устройства"><div class="sidebar-title">Устройства <span>4</span></div><label class="search"><span class="sr-only">Найти устройство</span><input id="search" type="search" placeholder="Найти устройство…" autocomplete="off"></label><div id="device-list"></div><div class="sidebar-foot">Локальный прототип<br>Нет доступа к USB или Windows</div></aside>
+<main id="main"><div class="page-header"><div><div class="eyebrow">УСТРОЙСТВО</div><h1 id="device-title"></h1><p id="device-subtitle" class="muted"></p></div><button id="export" class="button secondary">Экспорт примера ↓</button></div>
+<nav class="tabs" aria-label="Разделы устройства"><button data-tab="overview" aria-current="page">Обзор</button><button data-tab="compare">Сравнение</button><button data-tab="journal">Журнал</button><button data-tab="details">Подробности</button></nav>
+<div id="content"></div><div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
+<footer class="content-footer"><span>Пример снимка · 27 сентября, 14:32</span><span>Все данные вымышлены</span></footer>
+</main></div><script src="prototype.js"></script>
+</body></html>
